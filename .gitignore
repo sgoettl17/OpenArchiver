@@ -28,3 +28,6 @@ docs/.vitepress/cache
 
 # TS
 **/tsconfig.tsbuildinfo
+
+# Local Docker storage (PST/ZIP uploads, archives)
+data/
