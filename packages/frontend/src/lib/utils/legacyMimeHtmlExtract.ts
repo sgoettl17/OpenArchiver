@@ -1,8 +1,7 @@
 /** Marker shared by legacy PST `constructEml()` multipart boundaries. */
 export const OPEN_ARCHIVER_BOUNDARY = 'boundary-openarchiver';
 
-const HTML_PART_HEADER =
-	/Content-Type:\s*text\/html[^\r\n]*(?:\r?\n[^\r\n]+)*\r?\n\r?\n/i;
+const HTML_PART_HEADER = /Content-Type:\s*text\/html[^\r\n]*(?:\r?\n[^\r\n]+)*\r?\n\r?\n/i;
 
 /**
  * Closing delimiters produced by legacy PST import (`--` + boundary token + optional `--`).
