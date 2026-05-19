@@ -30,10 +30,16 @@
 		return content.includes(OPEN_ARCHIVER_BOUNDARY);
 	}
 
-	/** Pull the HTML section out of a broken multipart/alternative body. */
+	/**
+	 * Pull the HTML section out of a broken multipart/alternative body (legacy PST import).
+	 * Must stop at our MIME part boundary, not at the first `\n--` in Outlook HTML/CSS/comments.
+	 */
 	function extractHtmlPartFromMimePayload(source: string): string | null {
 		const htmlPartMatch = source.match(
-			/Content-Type:\s*text\/html[^\r\n]*(?:\r?\n[^\r\n]+)*\r?\n\r?\n([\s\S]*?)(?=\r?\n--[^\r\n]+|$)/i
+			new RegExp(
+				`Content-Type:\\s*text\\/html[^\\r\\n]*(?:\\r?\\n[^\\r\\n]+)*\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--[^\\r\\n]*${OPEN_ARCHIVER_BOUNDARY}|$)`,
+				'i'
+			)
 		);
 		return htmlPartMatch?.[1]?.trim() ?? null;
 	}
