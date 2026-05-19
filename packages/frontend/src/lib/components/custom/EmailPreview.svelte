@@ -3,6 +3,10 @@
 	import type { Buffer } from 'buffer';
 	import { t } from '$lib/translations';
 	import { encode } from 'html-entities';
+	import {
+		extractHtmlPartFromMimePayload,
+		looksLikeMalformedMimePayload,
+	} from '$lib/utils/legacyMimeHtmlExtract';
 
 	let {
 		raw,
@@ -21,27 +25,6 @@
 			binary += String.fromCharCode(bytes[i]);
 		}
 		return btoa(binary);
-	}
-
-	/** PST import previously built invalid nested MIME; preview may receive the raw part blob. */
-	const OPEN_ARCHIVER_BOUNDARY = 'boundary-openarchiver';
-
-	function looksLikeMalformedMimePayload(content: string): boolean {
-		return content.includes(OPEN_ARCHIVER_BOUNDARY);
-	}
-
-	/**
-	 * Pull the HTML section out of a broken multipart/alternative body (legacy PST import).
-	 * Must stop at our MIME part boundary, not at the first `\n--` in Outlook HTML/CSS/comments.
-	 */
-	function extractHtmlPartFromMimePayload(source: string): string | null {
-		const htmlPartMatch = source.match(
-			new RegExp(
-				`Content-Type:\\s*text\\/html[^\\r\\n]*(?:\\r?\\n[^\\r\\n]+)*\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--[^\\r\\n]*${OPEN_ARCHIVER_BOUNDARY}|$)`,
-				'i'
-			)
-		);
-		return htmlPartMatch?.[1]?.trim() ?? null;
 	}
 
 	function resolveDisplayHtml(html: string, attachments: Attachment[]): string {

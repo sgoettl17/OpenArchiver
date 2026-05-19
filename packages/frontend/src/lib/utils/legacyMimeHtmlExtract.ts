@@ -8,13 +8,14 @@ const HTML_PART_HEADER =
  * Closing delimiters produced by legacy PST import (`--` + boundary token + optional `--`).
  * Uses `lastIndexOf` so we never rely on a regex where `[^\r\n]*` sits before a literal boundary.
  */
+/** Legacy PST uses `--` + `----boundary-openarchiver_alt` → six dashes before the boundary name. */
 const LEGACY_PART_END_MARKERS = [
-	`\r\n----${OPEN_ARCHIVER_BOUNDARY}_alt--`,
-	`\n----${OPEN_ARCHIVER_BOUNDARY}_alt--`,
+	`\r\n------${OPEN_ARCHIVER_BOUNDARY}_alt--`,
+	`\n------${OPEN_ARCHIVER_BOUNDARY}_alt--`,
 	`\r\n--${OPEN_ARCHIVER_BOUNDARY}_alt--`,
 	`\n--${OPEN_ARCHIVER_BOUNDARY}_alt--`,
-	`\r\n----${OPEN_ARCHIVER_BOUNDARY}--`,
-	`\n----${OPEN_ARCHIVER_BOUNDARY}--`,
+	`\r\n------${OPEN_ARCHIVER_BOUNDARY}--`,
+	`\n------${OPEN_ARCHIVER_BOUNDARY}--`,
 	`\r\n--${OPEN_ARCHIVER_BOUNDARY}--`,
 	`\n--${OPEN_ARCHIVER_BOUNDARY}--`,
 ] as const;
