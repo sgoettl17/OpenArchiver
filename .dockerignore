@@ -44,3 +44,4 @@ Dockerfile
 
 # Local data
 meili_data
+data/

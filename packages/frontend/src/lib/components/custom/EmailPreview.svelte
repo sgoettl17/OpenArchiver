@@ -23,11 +23,35 @@
 		return btoa(binary);
 	}
 
+	/** PST import previously built invalid nested MIME; preview may receive the raw part blob. */
+	const OPEN_ARCHIVER_BOUNDARY = 'boundary-openarchiver';
+
+	function looksLikeMalformedMimePayload(content: string): boolean {
+		return content.includes(OPEN_ARCHIVER_BOUNDARY);
+	}
+
+	/** Pull the HTML section out of a broken multipart/alternative body. */
+	function extractHtmlPartFromMimePayload(source: string): string | null {
+		const htmlPartMatch = source.match(
+			/Content-Type:\s*text\/html[^\r\n]*(?:\r?\n[^\r\n]+)*\r?\n\r?\n([\s\S]*?)(?=\r?\n--[^\r\n]+|$)/i
+		);
+		return htmlPartMatch?.[1]?.trim() ?? null;
+	}
+
+	function resolveDisplayHtml(html: string, attachments: Attachment[]): string {
+		let content = html;
+		if (looksLikeMalformedMimePayload(content)) {
+			const extracted = extractHtmlPartFromMimePayload(content);
+			if (extracted) {
+				content = extracted;
+			}
+		}
+		return resolveContentIdReferences(content, attachments);
+	}
+
 	/**
 	 * Replaces `cid:` references in HTML with inline base64 data URIs
-	 * sourced from the parsed email attachments. This ensures that images
-	 * embedded as MIME parts (disposition: inline) render correctly in the
-	 * iframe preview.
+	 * sourced from the parsed email attachments.
 	 */
 	function resolveContentIdReferences(html: string, attachments: Attachment[]): string {
 		if (!attachments || attachments.length === 0) return html;
@@ -58,17 +82,25 @@
 	// By adding a <base> tag, all relative and absolute links in the HTML document
 	// will open in a new tab by default.
 	let emailHtml = $derived(() => {
-		if (parsedEmail && parsedEmail.html) {
-			const resolvedHtml = resolveContentIdReferences(
-				parsedEmail.html,
-				parsedEmail.attachments
-			);
-			return `<base target="_blank" />${resolvedHtml}`;
-		} else if (parsedEmail && parsedEmail.text) {
-			// display raw text email body in html
+		if (parsedEmail?.html) {
+			return `<base target="_blank" />${resolveDisplayHtml(parsedEmail.html, parsedEmail.attachments)}`;
+		}
+		if (parsedEmail?.text) {
+			const extractedHtml = extractHtmlPartFromMimePayload(parsedEmail.text);
+			if (extractedHtml) {
+				return `<base target="_blank" />${resolveDisplayHtml(
+					extractedHtml,
+					parsedEmail.attachments
+				)}`;
+			}
 			const safeHtmlContent: string = encode(parsedEmail.text);
 			return `<base target="_blank" /><div>${safeHtmlContent.replaceAll('\n', '<br>')}</div>`;
-		} else if (rawHtml) {
+		}
+		if (rawHtml) {
+			const extractedHtml = extractHtmlPartFromMimePayload(rawHtml);
+			if (extractedHtml) {
+				return `<base target="_blank" />${extractedHtml}`;
+			}
 			return `<base target="_blank" />${rawHtml}`;
 		}
 		return null;

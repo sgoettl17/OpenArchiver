@@ -139,6 +139,12 @@ export class OcrService {
 				return cachedAfterWait;
 			}
 
+			if (buffer.length === 0) {
+				logger.debug(`Skipping Tika for empty attachment (${mimeType})`);
+				this.tikaCache.set(hash, '');
+				return '';
+			}
+
 			logger.debug(`Executing Tika request for ${mimeType} (${buffer.length} bytes)`);
 
 			// DNS fallback: If "tika" hostname, also try localhost

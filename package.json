@@ -19,6 +19,8 @@
 		"db:migrate:dev": "dotenv -- pnpm --filter @open-archiver/backend db:migrate:dev",
 		"docker-start:oss": "concurrently \"pnpm start:workers\" \"pnpm start:oss\"",
 		"docker-start:enterprise": "concurrently \"pnpm start:workers\" \"pnpm start:enterprise\"",
+		"docker:up": "docker compose up -d",
+		"docker:restart": "docker compose up -d tika postgres valkey meilisearch && docker compose up -d --force-recreate open-archiver",
 		"docs:gen-spec": "node packages/backend/scripts/generate-openapi-spec.mjs",
 		"docs:dev": "pnpm docs:gen-spec && vitepress dev docs --port 3009",
 		"docs:build": "pnpm docs:gen-spec && vitepress build docs",

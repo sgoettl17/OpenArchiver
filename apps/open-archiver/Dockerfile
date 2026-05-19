@@ -43,15 +43,16 @@ COPY --from=build /app/packages/frontend/build ./packages/frontend/build
 COPY --from=build /app/packages/types/dist ./packages/types/dist
 COPY --from=build /app/apps/open-archiver/dist ./apps/open-archiver/dist
 
-# Copy the entrypoint script and make it executable
-COPY docker/docker-entrypoint.sh /usr/local/bin/
+# Copy the entrypoint script (normalize CRLF from Windows checkouts)
+COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expose the port the app runs on
 EXPOSE 4000
 EXPOSE 3000
 
 # Set the entrypoint
-ENTRYPOINT ["docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Start the application
 CMD ["pnpm", "docker-start:oss"]

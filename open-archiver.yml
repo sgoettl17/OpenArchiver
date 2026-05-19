@@ -39,6 +39,7 @@ services:
             - ENCRYPTION_KEY=${SERVICE_BASE64_64_ENCRYPTIONKEY}
             - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
             - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
+            - TIKA_URL=http://tika:9998
         volumes:
             - archiver-data:/var/data/open-archiver
         depends_on:
@@ -48,6 +49,8 @@ services:
                 condition: service_started
             meilisearch:
                 condition: service_started
+            tika:
+                condition: service_healthy
 
     postgres:
         image: postgres:17-alpine
@@ -59,7 +62,11 @@ services:
         volumes:
             - pgdata:/var/lib/postgresql/data
         healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+            test:
+                [
+                    "CMD-SHELL",
+                    "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+                ]
             interval: 10s
             timeout: 20s
             retries: 10
@@ -77,3 +84,17 @@ services:
             - MEILI_SCHEDULE_SNAPSHOT=86400
         volumes:
             - meilidata:/meili_data
+
+    tika:
+        image: apache/tika:3.2.2.0-full
+        restart: unless-stopped
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "wget -q -O /dev/null http://127.0.0.1:9998/ || exit 1",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 6
+            start_period: 30s

@@ -1,20 +1,38 @@
-version: '3.8'
-
+# Full stack includes Apache Tika for attachment text extraction.
+# Prefer:  docker compose up -d
+#          docker compose up -d --force-recreate open-archiver
+# Avoid:   docker compose restart open-archiver  (does not start stopped dependencies)
 services:
     open-archiver:
-        image: logiclabshq/open-archiver:latest
+        build:
+            context: .
+            dockerfile: apps/open-archiver/Dockerfile
+        image: open-archiver:local
         container_name: open-archiver
         restart: unless-stopped
         ports:
-            - '${PORT_FRONTEND:-3000}:3000' # Frontend
+            - "${PORT_FRONTEND:-3000}:3000"
         env_file:
             - .env
+        environment:
+            # Defaults for in-compose service discovery (override via .env if needed)
+            MEILI_HOST: ${MEILI_HOST:-http://meilisearch:7700}
+            REDIS_HOST: ${REDIS_HOST:-valkey}
+            REDIS_PORT: ${REDIS_PORT:-6379}
+            # Bundled Tika service (override in .env only if using an external Tika host)
+            TIKA_URL: ${TIKA_URL:-http://tika:9998}
+            POSTGRES_HOST: postgres
         volumes:
             - ${STORAGE_LOCAL_ROOT_PATH}:${STORAGE_LOCAL_ROOT_PATH}
         depends_on:
-            - postgres
-            - valkey
-            - meilisearch
+            postgres:
+                condition: service_healthy
+            valkey:
+                condition: service_started
+            meilisearch:
+                condition: service_started
+            tika:
+                condition: service_healthy
         networks:
             - open-archiver-net
 
@@ -28,6 +46,13 @@ services:
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
         volumes:
             - pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test:
+                ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+            interval: 5s
+            timeout: 5s
+            retries: 12
+            start_period: 10s
         networks:
             - open-archiver-net
 
@@ -35,7 +60,12 @@ services:
         image: valkey/valkey:8-alpine
         container_name: valkey
         restart: unless-stopped
-        command: valkey-server --requirepass ${REDIS_PASSWORD}
+        environment:
+            REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
+        command:
+            - valkey-server
+            - --requirepass
+            - ${REDIS_PASSWORD:-password}
         volumes:
             - valkeydata:/data
         networks:
@@ -56,7 +86,17 @@ services:
     tika:
         image: apache/tika:3.2.2.0-full
         container_name: tika
-        restart: always
+        restart: unless-stopped
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "wget -q -O /dev/null http://127.0.0.1:9998/ || exit 1",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 6
+            start_period: 30s
         networks:
             - open-archiver-net
 

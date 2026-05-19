@@ -355,7 +355,6 @@ export class PSTConnector implements IEmailConnector {
 	}
 
 	private async constructEml(msg: PSTMessage): Promise<string> {
-		let eml = '';
 		const boundary = '----boundary-openarchiver';
 		const altBoundary = '----boundary-openarchiver_alt';
 
@@ -383,28 +382,32 @@ export class PSTConnector implements IEmailConnector {
 			headers += `Message-ID: <${msg.internetMessageId}>\n`;
 		}
 		if (msg.inReplyToId) {
-			headers += `In-Reply-To: ${msg.inReplyToId}`;
+			headers += `In-Reply-To: ${msg.inReplyToId}\n`;
 		}
 		if (msg.conversationId) {
-			headers += `Conversation-Id: ${msg.conversationId}`;
+			headers += `Conversation-Id: ${msg.conversationId}\n`;
 		}
 		headers += 'MIME-Version: 1.0\n';
 
-		//add new headers
-		if (!/Content-Type:/i.test(headers)) {
-			if (msg.hasAttachments) {
-				headers += `Content-Type: multipart/mixed; boundary="${boundary}"\n`;
-				headers += `Content-Type: multipart/alternative; boundary="${altBoundary}"\n\n`;
-				eml += headers;
-				eml += `--${boundary}\n\n`;
-			} else {
-				eml += headers;
-				eml += `Content-Type: multipart/alternative; boundary="${altBoundary}"\n\n`;
-			}
-		}
-		// Body
 		const hasBody = !!msg.body;
 		const hasHtml = !!msg.bodyHTML;
+		const hasAlternative = hasBody || hasHtml;
+		const hasAttachments = msg.hasAttachments;
+
+		let eml = headers;
+
+		if (hasAttachments) {
+			eml += `Content-Type: multipart/mixed; boundary="${boundary}"\n\n`;
+			if (hasAlternative) {
+				eml += `--${boundary}\n`;
+				eml += `Content-Type: multipart/alternative; boundary="${altBoundary}"\n\n`;
+			}
+		} else if (hasAlternative) {
+			eml += `Content-Type: multipart/alternative; boundary="${altBoundary}"\n\n`;
+		} else {
+			eml += 'Content-Type: text/plain; charset="utf-8"\n\n';
+			return eml;
+		}
 
 		if (hasBody) {
 			eml += `--${altBoundary}\n`;
@@ -418,25 +421,25 @@ export class PSTConnector implements IEmailConnector {
 			eml += `${msg.bodyHTML}\n\n`;
 		}
 
-		if (hasBody || hasHtml) {
+		if (hasAlternative) {
 			eml += `--${altBoundary}--\n`;
 		}
 
-		if (msg.hasAttachments) {
+		if (hasAttachments) {
 			for (let i = 0; i < msg.numberOfAttachments; i++) {
 				const attachment = msg.getAttachment(i);
 				const attachmentStream = attachment.fileInputStream;
 				if (attachmentStream) {
 					const attachmentBuffer = Buffer.alloc(attachment.filesize);
 					attachmentStream.readCompletely(attachmentBuffer);
-					eml += `\n--${boundary}\n`;
+					eml += `--${boundary}\n`;
 					eml += `Content-Type: ${attachment.mimeTag}; name="${attachment.longFilename}"\n`;
 					eml += `Content-Disposition: attachment; filename="${attachment.longFilename}"\n`;
 					eml += 'Content-Transfer-Encoding: base64\n\n';
-					eml += `${attachmentBuffer.toString('base64')}\n`;
+					eml += `${attachmentBuffer.toString('base64')}\n\n`;
 				}
 			}
-			eml += `\n--${boundary}--`;
+			eml += `--${boundary}--\n`;
 		}
 
 		return eml;
