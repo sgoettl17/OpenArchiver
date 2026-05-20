@@ -7,6 +7,13 @@
 - Storage bind: `STORAGE_LOCAL_ROOT_PATH=/F/02_Repositories/Active/openarchiver/data/open-archiver`
 - `ENABLE_DELETION=true`, `REDIS_USER` commented out, `TIKA_URL=http://tika:9998`
 
+## pgAdmin / Postgres (2026-05-20)
+
+- Open Archiver DB: `open_archive` on container `postgres` (not `localhost:5432` — that is bridgitbench).
+- Host port: **5433** → `postgres:5432` (`POSTGRES_HOST_PORT` in compose).
+- Docker Desktop pgAdmin: `scripts/connect-pgadmin-docker-desktop.ps1` then host `postgres:5432`, or `host.docker.internal:5433`.
+- Reference SQL: `scripts/pgadmin-open-archiver.sql` (no `body_html` / `emails` table).
+
 ## Last fix (2026-05-19)
 
 - Container crash loop: CRLF on `docker/docker-entrypoint.sh` — Dockerfile `sed` + `.gitattributes` eol=lf.

@@ -40,6 +40,10 @@ services:
         image: postgres:17-alpine
         container_name: postgres
         restart: unless-stopped
+        # Host port 5433 avoids conflict with other local Postgres (e.g. bridgitbench on 5432).
+        # Docker Desktop pgAdmin: host.docker.internal, port 5433 — or run scripts/connect-pgadmin-docker-desktop.ps1 and use host postgres:5432.
+        ports:
+            - "${POSTGRES_HOST_PORT:-5433}:5432"
         environment:
             POSTGRES_DB: ${POSTGRES_DB:-open_archive}
             POSTGRES_USER: ${POSTGRES_USER:-admin}
