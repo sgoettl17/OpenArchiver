@@ -14,6 +14,12 @@
 - Docker Desktop pgAdmin: `scripts/connect-pgadmin-docker-desktop.ps1` then host `postgres:5432`, or `host.docker.internal:5433`.
 - Reference SQL: `scripts/pgadmin-open-archiver.sql` (no `body_html` / `emails` table).
 
+## Overnight host (2026-05-20)
+
+- `scripts/configure-overnight-host.ps1`: AC/DC sleep & disk timeout = never; display off OK; checks Docker AutoStart + `docker compose ps`.
+- Windows was sleeping on battery after 10 min (DC); disk was timing out at 20 min AC — both fixed for overnight PST/sync.
+- Keep machine plugged in; Docker Desktop AutoStart=true; optional: stop `bridgitbench_metabase` to free CPU during heavy Tika/PST work.
+
 ## Last fix (2026-05-19)
 
 - Container crash loop: CRLF on `docker/docker-entrypoint.sh` — Dockerfile `sed` + `.gitattributes` eol=lf.

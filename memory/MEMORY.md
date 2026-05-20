@@ -4,3 +4,4 @@
 - Valkey: do not set `REDIS_USER` with bundled `--requirepass` only.
 - PST MIME fix in `PSTConnector.constructEml`; requires delete + re-import to replace stored EML (resume skips duplicates).
 - Dockerfile entrypoint: strip CRLF on `docker/docker-entrypoint.sh` for Windows.
+- Overnight Windows: run `scripts/configure-overnight-host.ps1` (no sleep/disk timeout on AC+DC).
